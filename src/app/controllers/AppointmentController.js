@@ -42,6 +42,11 @@ class AppointmentController {
     const schema = Yup.object().shape({
       provider_id: Yup.number().required(),
       date: Yup.date().required(),
+      password: Yup.string()
+        .min(6)
+        .when('oldPassword', (oldPassword, field) =>
+          oldPassword ? field.required() : field
+        ),
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -49,6 +54,12 @@ class AppointmentController {
     }
 
     const { provider_id, date } = req.body;
+
+    if (provider_id === req.userId) {
+      return res
+        .status(400)
+        .json({ error: 'User and provider can not be the same' });
+    }
 
     const isProvider = await User.findOne({
       where: { id: provider_id, provider: true },
